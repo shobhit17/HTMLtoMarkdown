@@ -21,9 +21,7 @@ public class test {
 		case "h6":mark="######";break;
 		case "hr":mark="---";break;
 		case "strong":
-		case "</strong>":
-		case "<b>":
-		case "</b>":mark="**";break;
+		case "b":mark="**";break;
 		case "<i>":
 		case "</i>":	
 		case "</em>":
