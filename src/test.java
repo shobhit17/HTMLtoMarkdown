@@ -4,46 +4,58 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class test {
-
-	static Stack<Integer> listFlag;
-
+	static int spaceInList;
+	static Stack<HTMLTag> stack;
 	static String getMarkdownEquivalent(HTMLTag tag){
 		String mark="";
 		switch(tag.getElement()){
-		case "h1":mark="#";break;
-		case "h2":mark="##";break;
-		case "h3":mark="###";break;
-		case "h4":mark="####";break;
-		case "h5":mark="#####";break;
-		case "h6":mark="######";break;
-		case "hr":mark="---";break;
+		case "p":mark=System.lineSeparator();break;
+		case "br":mark=System.lineSeparator();break;
+		case "section":
+		case "code":mark+="`";break;
+		case "h1":if(tag.isOpenTag())mark=System.lineSeparator()+"# ";break;
+		case "h2":if(tag.isOpenTag())mark=System.lineSeparator()+"## ";break;
+		case "h3":if(tag.isOpenTag())mark=System.lineSeparator()+"### ";break;
+		case "h4":if(tag.isOpenTag())mark=System.lineSeparator()+"#### ";break;
+		case "h5":if(tag.isOpenTag())mark=System.lineSeparator()+"##### ";break;
+		case "h6":if(tag.isOpenTag())mark=System.lineSeparator()+"###### ";break;
+		case "hr":if(tag.isOpenTag())mark=System.lineSeparator()+"---"+System.lineSeparator();break;
 		case "strong":
 		case "b":mark="**";break;
-		case "<i>":
-		case "</i>":	
-		case "</em>":
-		case "<em>":mark="_";break;
-		case "</strike>":
-		case "<strike>":mark="~~";break;
-		case "<blockquote>":mark=">";break;
-		case "<ul>":listFlag.push(new Integer(1));break;
-		case "</ul>":listFlag.pop();break;
-		case "<ol>":listFlag.push(new Integer(2));break;
-		case "</ol>":listFlag.pop();break;
-		case "<li>":
-			if(listFlag.peek()==1)mark=" +";
-			else if(listFlag.peek()==2)mark=" 1.";
+		case "i":
+		case "em":mark="_";break;
+		case "strike":mark="~~";break;
+		case "blockquote":if(tag.isOpenTag())mark=">";break;
+		case "ol":
+		case "ul":if(tag.isOpenTag())spaceInList+=3;
+				  else spaceInList-=3;
+				  break;
+		case "li":
+			if(tag.isOpenTag()){
+				mark+=System.lineSeparator();
+				for(int i=0;i<spaceInList;i++)mark+=" ";
+				if(stack.peek().getElement().equalsIgnoreCase("ul")){
+					mark+="* ";
+				}
+				else{
+					mark+="1. ";
+				}
+			}
 			break;
-		default:mark=tag.getElement(); 
+		case "pre":mark+=(System.lineSeparator()+"```"+System.lineSeparator());break;
+		
+		default:mark=""; 
 		}
 		
 		
 		return mark;
 	}
-	 public enum EmptyTags{HR,BR};
+	 public enum EmptyTags{HR,BR,IMG};
 	 public static boolean checkEmptyTag(HTMLTag tag){
 		 boolean isEmptyTag=false;
 		 for(EmptyTags e:EmptyTags.values()){
@@ -56,13 +68,14 @@ public class test {
 	 public static LinkedList<HTMLTag> tokenize(String text) {
 	        StringBuffer buf = new StringBuffer(text);
 	        LinkedList<HTMLTag> queue = new LinkedList<HTMLTag>();
-
 	        while (true) {
 	            HTMLTag nextToken = nextToken(buf);
 	            if (nextToken == null) {
 	                break;
 	            } else {
-	                queue.add(nextToken);
+	                System.out.println("Element is "+ nextToken.getElement());
+	                System.out.println("Attribute is "+nextToken.getAttribute());
+	            	queue.add(nextToken);
 	            }
 	        }
 	        
@@ -70,8 +83,15 @@ public class test {
 	    }
 	 
 	 private static HTMLTag nextToken(StringBuffer htmlText) {
-	        if(htmlText.charAt(0)=='<'){
-		        int i1=0;
+		 int indexAg=htmlText.indexOf("<");
+		 int indexText = -1;
+		 Pattern p = Pattern.compile("[a-zA-Z0-9$+-]");
+		 Matcher m = p.matcher(htmlText);
+		 if (m.find()) {
+		     indexText = m.start();
+		 }
+	     if(indexAg<indexText){
+		        int i1=indexAg;
 		        int i2=htmlText.indexOf(">");
 		        
 		        if (i2>0) {
@@ -79,27 +99,75 @@ public class test {
 		            String tagAndAttr[]=tag.split(" ");
 		            String element=tagAndAttr[0];
 		            String attribute=null;
-		            if(tagAndAttr.length>1)
-		            	attribute=tagAndAttr[1];
+		            if(element.equalsIgnoreCase("a")){
+		            	if(tagAndAttr.length>1){
+		            		for(int i=0;i<tagAndAttr.length;i++){
+		            			if(tagAndAttr[i].contains("href")){
+		            				int startLink=tagAndAttr[i].indexOf("\"");
+		            				int endLink=tagAndAttr[i].lastIndexOf("\"");
+		            				if(startLink<0){
+		            					startLink=tagAndAttr[i].indexOf("\'");
+			            				endLink=tagAndAttr[i].lastIndexOf("\'");
+			            			}
+		            				if(startLink<0){
+		            					startLink=tagAndAttr[i].indexOf("=");
+			            				endLink=tagAndAttr[i].length();
+			            			}
+		            				attribute=tagAndAttr[i].substring(startLink+1,endLink );
+		            			}
+		            			
+		            		}
+		            	}
+			            	
+		            }
+		            if(element.equalsIgnoreCase("img")){
+		            	if(tagAndAttr.length>1){
+		            		for(int i=0;i<tagAndAttr.length;i++){
+		            			if(tagAndAttr[i].contains("src")){
+		            				int startLink=tagAndAttr[i].indexOf("\"");
+		            				int endLink=tagAndAttr[i].lastIndexOf("\"");
+		            				if(startLink<0){
+		            					startLink=tagAndAttr[i].indexOf("\'");
+			            				endLink=tagAndAttr[i].lastIndexOf("\'");
+			            			}
+		            				if(startLink<0){
+		            					startLink=tagAndAttr[i].indexOf("=");
+			            				endLink=tagAndAttr[i].length();
+			            			}
+		            				attribute=tagAndAttr[i].substring(startLink+1,endLink );
+		            			}
+		            		}
+		            	}
+			            	
+		            }
 		            
 		            boolean isOpenTag = true;
 		            if (element.indexOf("/") == 0) {
 		                isOpenTag = false;
 		                element = element.substring(1);
 		            }
-		            //element = element.replaceAll("[^a-zA-Z0-9!-]+", "");
 		            htmlText.delete(0, i2 + 1);
+		            Pattern np = Pattern.compile("[^a-zA-Z0-9]");
+		            element = np.matcher(element).replaceAll("");//removes / in self closing tags
 		            return new HTMLTag(element, isOpenTag,attribute);
 		        } else {
-		            return null;
+		        	return null;
 		            }
 	        }
 	        else{
 	        	int i2=htmlText.indexOf("<");
 	        	if(i2>0){
+	        		
 		        	String element="Text";
 		        	boolean isOpenTag=false;
-		        	String attribute=htmlText.substring(0,i2).trim();
+		        	String attribute=htmlText.substring(0,i2);
+		        	htmlText.delete(0, i2);
+		        	attribute=attribute.trim();
+		        	attribute=attribute.replace("\\","\\\\");
+		        	attribute=attribute.replace(".","\\.");
+		        	attribute=attribute.replace("+","\\+");
+		        	attribute=attribute.replace("-","\\-");
+		  
 		        	return new HTMLTag(element, isOpenTag, attribute);
 		        }
 	        	else{
@@ -111,27 +179,31 @@ public class test {
 		FileReader fileReader;
 		String fileContents="";
 		try {
-			fileReader = new FileReader("readme.txt");
+			fileReader = new FileReader("normal.html");
 			int i ;
 			while((i=fileReader.read())!=-1){
 				char ch = (char)i;
 				fileContents = fileContents+ch; 
 			  }
-			System.out.println(fileContents);
 		} catch (FileNotFoundException e) {
+			System.out.println("File not Found");
 			e.printStackTrace();
 		}catch(IOException e){
 			e.printStackTrace();
 		}
 		LinkedList<HTMLTag> tokens=tokenize(fileContents);
+		System.out.println("Tokenization Completed....");
 		ListIterator<HTMLTag> it = tokens.listIterator(0);
-		Stack<HTMLTag> stack=new Stack<HTMLTag>();
+		stack=new Stack<HTMLTag>();
+		spaceInList=0;
 		String markdownText="";
 		while(it.hasNext()){
 			HTMLTag tag=it.next();
 			if(!tag.getElement().equalsIgnoreCase("Text")){
+//				System.out.println("Inside Tags");
+				if(!(tag.getElement().equalsIgnoreCase("img")||tag.getElement().equalsIgnoreCase("a")))
+					markdownText+=(getMarkdownEquivalent(tag));
 				if(tag.isOpenTag()){
-					markdownText+=getMarkdownEquivalent(tag);
 					if(!checkEmptyTag(tag))
 						stack.push(tag);
 				}
@@ -141,13 +213,29 @@ public class test {
 					}
 					else{
 						System.out.println("Tags in HTML file are not balanced");
+						System.out.println(stack.peek().getElement()+" != "+tag.getElement());
 					}
+				}
+				if(tag.getElement().equalsIgnoreCase("a")&&tag.isOpenTag()){
+					String href=tag.getAttribute();
+					String textOfLink="#";
+					tag=it.next();
+					if(tag.getElement().equalsIgnoreCase("Text")){
+						textOfLink=tag.getAttribute();
+					}
+					markdownText+=("["+textOfLink+"]("+href+")");
+				}
+				else if(tag.getElement().equalsIgnoreCase("img")){
+					String href=tag.getAttribute();
+					markdownText+=("![Image]("+href+")");
 				}
 			}
 			else{
-				markdownText+=tag.getAttribute();
+				markdownText+=(tag.getAttribute());
 			}
 		}
+		System.out.println("MarkdownText is");
+		System.out.println(markdownText);
 	}
 	
 
