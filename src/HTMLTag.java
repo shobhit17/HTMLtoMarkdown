@@ -1,7 +1,6 @@
 
 public class HTMLTag {
 	private String element;
-	private boolean closingReq;
 	private boolean isOpenTag;
 	private String attribute;
 	
@@ -10,12 +9,6 @@ public class HTMLTag {
 	}
 	public void setElement(String element) {
 		this.element = element;
-	}
-	public boolean isClosingReq() {
-		return closingReq;
-	}
-	public void setClosingReq(boolean closingReq) {
-		this.closingReq = closingReq;
 	}
 	public boolean isOpenTag() {
 		return isOpenTag;

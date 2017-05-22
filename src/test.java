@@ -1,5 +1,7 @@
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -9,11 +11,25 @@ import java.util.regex.Pattern;
 
 
 public class test {
+	
 	static int spaceInList;
 	static Stack<HTMLTag> stack;
+	static int tableHeadCount;
+	static boolean contentInHead=false;
+	static int totalTags;
+	static int tagsConverted;
+	enum EmptyTags{HR,BR,IMG};
+	
 	static String getMarkdownEquivalent(HTMLTag tag){
 		String mark="";
-		switch(tag.getElement()){
+		tagsConverted++;
+		switch(tag.getElement().toLowerCase()){
+		case "head":if(tag.isOpenTag())
+						contentInHead=true;
+					else{
+						contentInHead=false;
+					}
+					break;
 		case "p":mark=System.lineSeparator();break;
 		case "br":mark=System.lineSeparator();break;
 		case "section":
@@ -48,14 +64,33 @@ public class test {
 			}
 			break;
 		case "pre":mark+=(System.lineSeparator()+"```"+System.lineSeparator());break;
-		
-		default:mark=""; 
+		case "tr":if(tag.isOpenTag())
+					mark+=System.lineSeparator();
+				  else{
+					  if(tableHeadCount>0)
+						  mark+=System.lineSeparator();
+					  for(int i=0;i<tableHeadCount;i++){
+						  mark+=("|---");
+					  }
+					  tableHeadCount=0;
+				  }
+				  break;
+		case "th":
+			      if(tag.isOpenTag()){
+			    	  mark+=("| ");
+			    	  tableHeadCount+=1;  
+			      }
+				  break;
+		case "td":
+				  if(tag.isOpenTag()){
+		    	    mark+=("| ");
+		    	  }
+			  break;		
+		default:mark="";tagsConverted--; 
 		}
-		
-		
 		return mark;
 	}
-	 public enum EmptyTags{HR,BR,IMG};
+	 
 	 public static boolean checkEmptyTag(HTMLTag tag){
 		 boolean isEmptyTag=false;
 		 for(EmptyTags e:EmptyTags.values()){
@@ -65,6 +100,7 @@ public class test {
 		 }
 		 return isEmptyTag;
 	 }
+	 
 	 public static LinkedList<HTMLTag> tokenize(String text) {
 	        StringBuffer buf = new StringBuffer(text);
 	        LinkedList<HTMLTag> queue = new LinkedList<HTMLTag>();
@@ -73,8 +109,8 @@ public class test {
 	            if (nextToken == null) {
 	                break;
 	            } else {
-	                System.out.println("Element is "+ nextToken.getElement());
-	                System.out.println("Attribute is "+nextToken.getAttribute());
+//	                System.out.println("Element is "+ nextToken.getElement());
+//	                System.out.println("Attribute is "+nextToken.getAttribute());
 	            	queue.add(nextToken);
 	            }
 	        }
@@ -98,7 +134,7 @@ public class test {
 		            String tag=htmlText.substring(i1+1,i2).trim();
 		            String tagAndAttr[]=tag.split(" ");
 		            String element=tagAndAttr[0];
-		            String attribute=null;
+		            String attribute="#";
 		            if(element.equalsIgnoreCase("a")){
 		            	if(tagAndAttr.length>1){
 		            		for(int i=0;i<tagAndAttr.length;i++){
@@ -149,6 +185,7 @@ public class test {
 		            htmlText.delete(0, i2 + 1);
 		            Pattern np = Pattern.compile("[^a-zA-Z0-9]");
 		            element = np.matcher(element).replaceAll("");//removes / in self closing tags
+		            totalTags++;
 		            return new HTMLTag(element, isOpenTag,attribute);
 		        } else {
 		        	return null;
@@ -157,8 +194,7 @@ public class test {
 	        else{
 	        	int i2=htmlText.indexOf("<");
 	        	if(i2>0){
-	        		
-		        	String element="Text";
+	        		String element="Text";
 		        	boolean isOpenTag=false;
 		        	String attribute=htmlText.substring(0,i2);
 		        	htmlText.delete(0, i2);
@@ -175,22 +211,28 @@ public class test {
 	        	}
 	        }
 	 }
-	public static void main(String[] args) {
+	
+	 public static void main(String[] args) {
+		totalTags=0;
+		tagsConverted=0;
 		FileReader fileReader;
+		String fileName="normal";
 		String fileContents="";
 		try {
-			fileReader = new FileReader("normal.html");
+			fileReader = new FileReader(fileName+".html");
 			int i ;
 			while((i=fileReader.read())!=-1){
 				char ch = (char)i;
 				fileContents = fileContents+ch; 
 			  }
+			fileReader.close();
 		} catch (FileNotFoundException e) {
 			System.out.println("File not Found");
 			e.printStackTrace();
 		}catch(IOException e){
 			e.printStackTrace();
 		}
+		
 		LinkedList<HTMLTag> tokens=tokenize(fileContents);
 		System.out.println("Tokenization Completed....");
 		ListIterator<HTMLTag> it = tokens.listIterator(0);
@@ -214,6 +256,7 @@ public class test {
 					else{
 						System.out.println("Tags in HTML file are not balanced");
 						System.out.println(stack.peek().getElement()+" != "+tag.getElement());
+						break;
 					}
 				}
 				if(tag.getElement().equalsIgnoreCase("a")&&tag.isOpenTag()){
@@ -231,11 +274,24 @@ public class test {
 				}
 			}
 			else{
+				if(!contentInHead)
 				markdownText+=(tag.getAttribute());
 			}
 		}
-		System.out.println("MarkdownText is");
+		System.out.println("MarkdownText is\n");
 		System.out.println(markdownText);
+		System.out.println();
+		System.out.println("Total Tags "+totalTags);
+		System.out.println("Tags Converted "+tagsConverted);
+		try {
+		    BufferedWriter out = new BufferedWriter(new FileWriter(fileName+".md"));
+		    out.write(markdownText); 
+		    out.close();
+		}
+		catch (IOException e)
+		{
+		    e.printStackTrace();
+		}
 	}
 	
 
