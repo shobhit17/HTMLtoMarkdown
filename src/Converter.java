@@ -337,11 +337,11 @@ public class Converter implements Runnable{
 
 	@Override
 	public void run() {
-		StringBuffer fileContents=readfile(fileName+".html");
+		StringBuffer fileContents=readfile("TestData\\"+fileName+".html");
 //		System.out.println("HTML File:");
 //		System.out.println(fileContents);
 		StringBuffer markdownText=convert(fileContents);
-		writeIntoFile(fileName+".md",markdownText.toString());
+		writeIntoFile("TestData\\"+fileName+".md",markdownText.toString());
 //		System.out.println("MarkdownText is\n");
 //		System.out.println(markdownText);
 		System.out.println();

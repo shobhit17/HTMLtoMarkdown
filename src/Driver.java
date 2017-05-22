@@ -11,6 +11,8 @@ public class Driver {
 		// TODO Auto-generated method stub
 		List<Converter> files=new ArrayList<Converter>();
 		files.add(new Converter("normal1"));
+		files.add(new Converter("normal2"));
+		files.add(new Converter("normal3"));
 		files.add(new Converter("urlescaping"));
 		ThreadPoolExecutor executor=(ThreadPoolExecutor) Executors.newFixedThreadPool(4);
 		for(int i=0;i<files.size();i++){
