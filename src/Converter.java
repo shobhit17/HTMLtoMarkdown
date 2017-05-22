@@ -10,19 +10,28 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class test {
+public class Converter implements Runnable{
 	
-	static int spaceInList;
-	static Stack<HTMLTag> stack;
-	static int tableHeadCount;
-	static boolean contentInHead=false;
-	static int totalTags;
-	static int tagsConverted;
-	enum EmptyTags{HR,BR,IMG};
+	private String fileName;
+	private int spaceInList;
+	private Stack<HTMLTag> stack;
+	private int tableHeadCount;
+	private boolean contentInHead=false;
+	private int totalTags;
+	private int tagsConverted;
+	enum EmptyTags{HR,BR,IMG,LINK,META};
 	
-	static String getMarkdownEquivalent(HTMLTag tag){
+	Converter(String fileName){
+		totalTags=0;
+		tagsConverted=0;
+		stack=new Stack<HTMLTag>();			//Stack to check tag balancing
+		spaceInList=0;                      //Variable to keep track of spaces to indent list in markdown
+		this.fileName=fileName;
+		
+	}
+	
+	public String getMarkdownEquivalent(HTMLTag tag){
 		String mark="";
-		tagsConverted++;
 		switch(tag.getElement().toLowerCase()){
 		case "head":if(tag.isOpenTag())
 						contentInHead=true;
@@ -91,17 +100,33 @@ public class test {
 		return mark;
 	}
 	 
-	 public static boolean checkEmptyTag(HTMLTag tag){
+	 public boolean checkEmptyTag(HTMLTag tag){
 		 boolean isEmptyTag=false;
 		 for(EmptyTags e:EmptyTags.values()){
 			 if(e.toString().equalsIgnoreCase(tag.getElement())){
 				 isEmptyTag=true;
 			 }
 		 }
+		 if(tag.getElement().equals("!--"))
+			 isEmptyTag=true;
 		 return isEmptyTag;
 	 }
 	 
-	 public static LinkedList<HTMLTag> tokenize(String text) {
+	 public String replaceSpecialChar(String text){
+		text=text.replace("\\","\\\\");
+		text=text.replace(".","\\.");
+     	text=text.replace("+","\\+");
+     	text=text.replace("-","\\-");
+     	text=text.replace("&nbsp;", " ");
+     	text=text.replace("&lt;", "<");
+     	text=text.replace("&gt;", ">");
+     	text=text.replace("&amp;","&");
+     	text=text.replace("&quot;","\"");
+     	text=text.replace("&apos;","\'");
+     	return text;
+	 }
+	 
+	 public LinkedList<HTMLTag> tokenize(StringBuffer text) {
 	        StringBuffer buf = new StringBuffer(text);
 	        LinkedList<HTMLTag> queue = new LinkedList<HTMLTag>();
 	        while (true) {
@@ -118,10 +143,10 @@ public class test {
 	        return queue;
 	    }
 	 
-	 private static HTMLTag nextToken(StringBuffer htmlText) {
+	 public HTMLTag nextToken(StringBuffer htmlText) {
 		 int indexAg=htmlText.indexOf("<");
 		 int indexText = -1;
-		 Pattern p = Pattern.compile("[a-zA-Z0-9$+-]");
+		 Pattern p = Pattern.compile("[^\n\t\r<]");  
 		 Matcher m = p.matcher(htmlText);
 		 if (m.find()) {
 		     indexText = m.start();
@@ -129,13 +154,22 @@ public class test {
 	     if(indexAg<indexText){
 		        int i1=indexAg;
 		        int i2=htmlText.indexOf(">");
-		        
 		        if (i2>0) {
 		            String tag=htmlText.substring(i1+1,i2).trim();
+		            boolean isSelfClosed=false;
+		            if(tag.charAt(tag.length()-1)=='/'){
+		            	isSelfClosed=true;
+		            }
 		            String tagAndAttr[]=tag.split(" ");
 		            String element=tagAndAttr[0];
-		            String attribute="#";
-		            if(element.equalsIgnoreCase("a")){
+		            String attribute=null;
+		            boolean isOpenTag = true;
+		            if (element.indexOf("/") == 0) {
+		                isOpenTag = false;
+		                element = element.substring(1);
+		            }
+		            
+		            if(element.equalsIgnoreCase("a")&&isOpenTag){
 		            	if(tagAndAttr.length>1){
 		            		for(int i=0;i<tagAndAttr.length;i++){
 		            			if(tagAndAttr[i].contains("href")){
@@ -149,7 +183,12 @@ public class test {
 		            					startLink=tagAndAttr[i].indexOf("=");
 			            				endLink=tagAndAttr[i].length();
 			            			}
-		            				attribute=tagAndAttr[i].substring(startLink+1,endLink );
+		            				if(endLink>startLink){
+		            					attribute=tagAndAttr[i].substring(startLink+1,endLink );
+		            				}
+		            				else{
+		            					attribute="#";
+		            				}
 		            			}
 		            			
 		            		}
@@ -170,6 +209,7 @@ public class test {
 		            					startLink=tagAndAttr[i].indexOf("=");
 			            				endLink=tagAndAttr[i].length();
 			            			}
+		            				if(endLink>startLink)
 		            				attribute=tagAndAttr[i].substring(startLink+1,endLink );
 		            			}
 		            		}
@@ -177,16 +217,11 @@ public class test {
 			            	
 		            }
 		            
-		            boolean isOpenTag = true;
-		            if (element.indexOf("/") == 0) {
-		                isOpenTag = false;
-		                element = element.substring(1);
-		            }
+		            
 		            htmlText.delete(0, i2 + 1);
-		            Pattern np = Pattern.compile("[^a-zA-Z0-9]");
-		            element = np.matcher(element).replaceAll("");//removes / in self closing tags
+		            element=element.replaceAll("[^a-zA-Z0-9]", ""); //cleaning of Element 
 		            totalTags++;
-		            return new HTMLTag(element, isOpenTag,attribute);
+		            return new HTMLTag(element, isOpenTag,attribute,isSelfClosed);
 		        } else {
 		        	return null;
 		            }
@@ -199,99 +234,120 @@ public class test {
 		        	String attribute=htmlText.substring(0,i2);
 		        	htmlText.delete(0, i2);
 		        	attribute=attribute.trim();
-		        	attribute=attribute.replace("\\","\\\\");
-		        	attribute=attribute.replace(".","\\.");
-		        	attribute=attribute.replace("+","\\+");
-		        	attribute=attribute.replace("-","\\-");
-		  
-		        	return new HTMLTag(element, isOpenTag, attribute);
+		        	attribute=replaceSpecialChar(attribute);
+		        	return new HTMLTag(element, isOpenTag, attribute,false);
 		        }
 	        	else{
 	        		return null;
 	        	}
 	        }
 	 }
-	
-	 public static void main(String[] args) {
-		totalTags=0;
-		tagsConverted=0;
-		FileReader fileReader;
-		String fileName="normal";
-		String fileContents="";
-		try {
-			fileReader = new FileReader(fileName+".html");
-			int i ;
-			while((i=fileReader.read())!=-1){
-				char ch = (char)i;
-				fileContents = fileContents+ch; 
-			  }
-			fileReader.close();
-		} catch (FileNotFoundException e) {
-			System.out.println("File not Found");
-			e.printStackTrace();
-		}catch(IOException e){
-			e.printStackTrace();
-		}
-		
-		LinkedList<HTMLTag> tokens=tokenize(fileContents);
-		System.out.println("Tokenization Completed....");
-		ListIterator<HTMLTag> it = tokens.listIterator(0);
-		stack=new Stack<HTMLTag>();
-		spaceInList=0;
-		String markdownText="";
-		while(it.hasNext()){
-			HTMLTag tag=it.next();
-			if(!tag.getElement().equalsIgnoreCase("Text")){
-//				System.out.println("Inside Tags");
-				if(!(tag.getElement().equalsIgnoreCase("img")||tag.getElement().equalsIgnoreCase("a")))
-					markdownText+=(getMarkdownEquivalent(tag));
-				if(tag.isOpenTag()){
-					if(!checkEmptyTag(tag))
-						stack.push(tag);
-				}
-				else if(!tag.isOpenTag()){
-					if(stack.peek().getElement().equalsIgnoreCase(tag.getElement())){
-						stack.pop();
+	 
+	 public StringBuffer readfile(String htmlFile){
+		 FileReader fileReader;
+		 StringBuffer fileContents=new StringBuffer("");
+		 try {
+				fileReader = new FileReader(htmlFile);
+				int i ;
+				while((i=fileReader.read())!=-1){
+					char ch = (char)i;
+					fileContents = fileContents.append(ch); 
+				  }
+				fileReader.close();
+			} catch (FileNotFoundException e) {
+				System.out.println("File not Found");
+				e.printStackTrace();
+			}catch(IOException e){
+				e.printStackTrace();
+			}
+		 return fileContents;
+	 }
+	 
+	 public void writeIntoFile(String file,String content){
+		 try {
+			    BufferedWriter out = new BufferedWriter(new FileWriter(file));
+			    out.write(content); 
+			    out.close();
+			}
+			catch (IOException e)
+			{
+			    e.printStackTrace();
+			}
+	 }
+	 
+	 public StringBuffer convert(StringBuffer fileContents){
+		 	LinkedList<HTMLTag> tokens=tokenize(fileContents);
+			System.out.println("Tokenization Completed....");
+			
+			ListIterator<HTMLTag> it = tokens.listIterator(0);
+			StringBuffer markdownText=new StringBuffer("");
+			while(it.hasNext()){
+				HTMLTag tag=it.next();
+				if(!tag.getElement().equalsIgnoreCase("Text")){
+					tagsConverted++;
+//					System.out.println("Inside Tags");
+					if(!(tag.getElement().equalsIgnoreCase("img")||tag.getElement().equalsIgnoreCase("a")))
+						markdownText.append((getMarkdownEquivalent(tag)));
+					if(tag.isOpenTag()){
+						if((!checkEmptyTag(tag))&&(!tag.isSelfClosed()))
+							stack.push(tag);
 					}
 					else{
-						System.out.println("Tags in HTML file are not balanced");
-						System.out.println(stack.peek().getElement()+" != "+tag.getElement());
-						break;
+						if(stack.peek().getElement().equalsIgnoreCase(tag.getElement())){
+							stack.pop();
+						}
+						else{
+							System.out.println("Tags in HTML file are not balanced");
+							System.out.println(stack.peek().getElement());
+							System.out.println(stack.peek().getElement()+" != "+tag.getElement());
+							break;
+						}
+					}
+					if(tag.getElement().equalsIgnoreCase("a")&&tag.isOpenTag()){
+						String href=tag.getAttribute();
+						String textOfLink="#";
+						tag=it.next();
+						if(tag.getElement().equalsIgnoreCase("Text")){
+							textOfLink=tag.getAttribute();
+							markdownText.append("["+textOfLink+"]("+href+")");
+						}
+						else{
+							tag=it.previous();
+						}
+					}
+					else if(tag.getElement().equalsIgnoreCase("img")){
+						String href=tag.getAttribute();
+						markdownText.append("![Image]("+href+")");
 					}
 				}
-				if(tag.getElement().equalsIgnoreCase("a")&&tag.isOpenTag()){
-					String href=tag.getAttribute();
-					String textOfLink="#";
-					tag=it.next();
-					if(tag.getElement().equalsIgnoreCase("Text")){
-						textOfLink=tag.getAttribute();
+				else{
+					if(!contentInHead){      //Do not print text inside Head Tag of HTML eg. Title 
+						
+						markdownText.append(tag.getAttribute());
 					}
-					markdownText+=("["+textOfLink+"]("+href+")");
-				}
-				else if(tag.getElement().equalsIgnoreCase("img")){
-					String href=tag.getAttribute();
-					markdownText+=("![Image]("+href+")");
 				}
 			}
-			else{
-				if(!contentInHead)
-				markdownText+=(tag.getAttribute());
+			if(!stack.isEmpty()){
+				System.out.println("HTML file is not Balanced");
 			}
-		}
-		System.out.println("MarkdownText is\n");
-		System.out.println(markdownText);
+			return markdownText;
+
+	 }
+	 
+
+	@Override
+	public void run() {
+		StringBuffer fileContents=readfile(fileName+".html");
+//		System.out.println("HTML File:");
+//		System.out.println(fileContents);
+		StringBuffer markdownText=convert(fileContents);
+		writeIntoFile(fileName+".md",markdownText.toString());
+//		System.out.println("MarkdownText is\n");
+//		System.out.println(markdownText);
 		System.out.println();
-		System.out.println("Total Tags "+totalTags);
-		System.out.println("Tags Converted "+tagsConverted);
-		try {
-		    BufferedWriter out = new BufferedWriter(new FileWriter(fileName+".md"));
-		    out.write(markdownText); 
-		    out.close();
-		}
-		catch (IOException e)
-		{
-		    e.printStackTrace();
-		}
+		System.out.println(fileName+": Total Tags "+totalTags);
+		System.out.println(fileName+": Tags Converted "+tagsConverted);
+		System.out.println(fileName+" KB: " + (double) (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024);
 	}
 	
 
