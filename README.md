@@ -11,14 +11,14 @@ This is a simple java program to convert HTML file to its Markdown Equivalent. M
   1. Executer in Driver class run multiple threads. These thread are implemented in Converter class. Converter class implements runnable interface for multithreading.
   2. Converter class first reads the file and put the content in StringBuffer named fileContents.
   3. Converter then call tokenizer class which tokenizes the fileContents.
-  4. There are two types of Token- HTMLTag and TextToken. HTMLTags are the HTML tags like <H1>,<BR>,<body> etc. and TextTokens are normal text.
+  4. There are two types of Token- HTMLTag and TextToken. HTMLTags are the HTML tags like <H1> , <BR> , <body> etc. and TextTokens are normal text.
   4. Both HTMLTag and TextToken implements Token Interface.
-  5. HTMLTag objects have following properties-
-    1.Type: Tag/Text
-    2.element: TagName eg: a,br,hr,H1,body
-    3.isOpenTag: true/false; Determines if tag was open or close. Eg: true when <body> false when </body>
-    4.iselfClose: true/false; Determines if tag closed itself Eg:<br/>
-    5.attribute: to strore href link for <a> tag and src link for <img> tag.
+  5. HTMLTag objects have following properties
+    1. Type: Tag/Text
+    2. element: TagName eg: a,br,hr,H1,body
+    3. isOpenTag: true/false; Determines if tag was open or close. Eg: true when <body> false when </body>
+    4. iselfClose: true/false; Determines if tag closed itself Eg:<br/>
+    5. attribute: to strore href link for <a> tag and src link for <img> tag.
   6. TextTag has only 2 properties- Type(Text/Tag) and Text(Actual Text).
   7. Tokenizer.getTokens() method returns LinkList of nodetype Token.
   8. Converter then use MarkDownGenerator Class to generate MarkDownText.
