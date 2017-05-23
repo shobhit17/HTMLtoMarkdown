@@ -5,8 +5,8 @@ import java.util.Stack;
 
 
 public class MarkDownGenerator {
-	LinkedList<Token> tokens;
-	StringBuffer markdownText;
+	private LinkedList<Token> tokens;
+	private StringBuffer markdownText;
 	private boolean contentInHead;
 	private int spaceInList;
 	private Stack<HTMLTag> stack;
@@ -24,7 +24,7 @@ public class MarkDownGenerator {
 	}
 
 	
-	public MarkDownGenerator(LinkedList<Token> tokens) {
+	MarkDownGenerator(LinkedList<Token> tokens) {
 		this.tokens=tokens;
 		tagsConverted=0;
 		stack=new Stack<HTMLTag>();
@@ -33,7 +33,7 @@ public class MarkDownGenerator {
 		generateMarkdownText();
 	}
 	
-	public String getMarkdownEquivalent(HTMLTag tag){
+	private String getMarkdownEquivalent(HTMLTag tag){
 		String mark="";
 		switch(tag.getElement().toLowerCase()){
 		case "head":if(tag.isOpenTag())
@@ -103,7 +103,7 @@ public class MarkDownGenerator {
 		return mark;
 	}
 
-	public boolean checkEmptyTag(HTMLTag tag){
+	private boolean checkEmptyTag(HTMLTag tag){
 		boolean isEmptyTag=false;
 		for(EmptyTags e:EmptyTags.values()){
 			if(e.toString().equalsIgnoreCase(tag.getElement())){
@@ -117,7 +117,7 @@ public class MarkDownGenerator {
 
 
 	
-	public void generateMarkdownText(){
+	private void generateMarkdownText(){
 		ListIterator<Token> it = tokens.listIterator(0);
 		while(it.hasNext()){
 			Token tag=it.next();
@@ -126,6 +126,8 @@ public class MarkDownGenerator {
 				tagsConverted++;
 				if(!(htmlTag.getElement().equalsIgnoreCase("img")||htmlTag.getElement().equalsIgnoreCase("a")))
 					markdownText.append((getMarkdownEquivalent(htmlTag)));
+				
+				// To check tag balancing in HTML
 				if(htmlTag.isOpenTag()){
 					if((!checkEmptyTag(htmlTag))&&(!htmlTag.isSelfClosed()))
 						stack.push(htmlTag);
@@ -140,6 +142,8 @@ public class MarkDownGenerator {
 						break;
 					}
 				}
+				
+				//to get mardown equivalent in case of Links
 				if(htmlTag.getElement().equalsIgnoreCase("a")&&htmlTag.isOpenTag()){
 					String href=htmlTag.getAttribute();
 					String textOfLink="#";
@@ -152,6 +156,7 @@ public class MarkDownGenerator {
 						tag=it.previous();
 					}
 				}
+				//to get markdown equivalent in case of img
 				else if(htmlTag.getElement().equalsIgnoreCase("img")){
 					String href=htmlTag.getAttribute();
 					markdownText.append("![Image]("+href+")");

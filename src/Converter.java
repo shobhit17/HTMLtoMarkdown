@@ -19,7 +19,7 @@ public class Converter implements Runnable{
 	}
 
 	
-	public StringBuffer readfile(String htmlFile){
+	private StringBuffer readfile(String htmlFile){
 		FileReader fileReader;
 		StringBuffer fileContents=new StringBuffer("");
 		try {
@@ -39,7 +39,7 @@ public class Converter implements Runnable{
 		return fileContents;
 	}
 
-	public void writeIntoFile(String file,String content){
+	private void writeIntoFile(String file,String content){
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(file));
 			out.write(content); 
@@ -51,7 +51,7 @@ public class Converter implements Runnable{
 		}
 	}
 
-	public StringBuffer convert(StringBuffer fileContents){
+	private StringBuffer convert(StringBuffer fileContents){
 		Tokenizer tokenizer=new Tokenizer(fileContents.toString());
 		LinkedList<Token> tokens=tokenizer.getTokens();
 		System.out.println("Tokenization Completed....");

@@ -27,13 +27,14 @@ public class HTMLTag implements Token{
 	}
 	
 	
-	public HTMLTag(String element,boolean isOpenTag,String attribute,boolean isSelfClose){
+	HTMLTag(String element,boolean isOpenTag,String attribute,boolean isSelfClose){
 		this.type="HTMLTag";
 		this.element=element;
 		this.isOpenTag=isOpenTag;
 		this.attribute=attribute;
 		this.isSelfClosed=isSelfClose;
 	}
+	
 	public boolean isClosingof(HTMLTag HTMLCloseTag){
 		boolean correct=false;
 		if(getElement().equals(HTMLCloseTag.getElement()) && isOpenTag()!=HTMLCloseTag.isOpenTag()){
