@@ -8,7 +8,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class Driver {
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		List<Converter> files=new ArrayList<Converter>();
 		files.add(new Converter("normal1"));
 		files.add(new Converter("normal2"));
