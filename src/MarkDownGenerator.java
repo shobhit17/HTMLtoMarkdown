@@ -30,7 +30,6 @@ public class MarkDownGenerator {
 		stack=new Stack<HTMLTag>();
 		contentInHead=false;
 		markdownText=new StringBuffer("");
-		generateMarkdownText();
 	}
 	
 	private String getMarkdownEquivalent(HTMLTag tag){
@@ -117,7 +116,7 @@ public class MarkDownGenerator {
 
 
 	
-	private void generateMarkdownText(){
+	public void generateMarkdownText(){
 		ListIterator<Token> it = tokens.listIterator(0);
 		while(it.hasNext()){
 			Token tag=it.next();

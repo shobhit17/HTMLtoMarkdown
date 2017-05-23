@@ -22,10 +22,9 @@ public class Tokenizer {
 	Tokenizer(String htmlText){
 		this.htmlText=htmlText;
 		totalTags=0;
-		tokenize();
 	}
 
-	private void tokenize() {
+	public void tokenize() {
 		StringBuffer buf = new StringBuffer(htmlText);
 		tokens = new LinkedList<Token>();
 		while (true) {

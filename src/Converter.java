@@ -53,10 +53,12 @@ public class Converter implements Runnable{
 
 	private StringBuffer convert(StringBuffer fileContents){
 		Tokenizer tokenizer=new Tokenizer(fileContents.toString());
+		tokenizer.tokenize();
 		LinkedList<Token> tokens=tokenizer.getTokens();
 		System.out.println("Tokenization Completed....");
 		totalTags=tokenizer.getTotalTags();
 		MarkDownGenerator markDownGenerator=new MarkDownGenerator(tokens);
+		markDownGenerator.generateMarkdownText();
 		tagsConverted=markDownGenerator.getTagsConverted();
 		return markDownGenerator.getMarkdownText();
 	}
