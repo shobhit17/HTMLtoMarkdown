@@ -19,7 +19,7 @@ public class Converter implements Runnable{
 	}
 
 	
-	private StringBuffer readfile(String htmlFile){
+	private StringBuffer readFile(String htmlFile){
 		FileReader fileReader;
 		StringBuffer fileContents=new StringBuffer("");
 		try {
@@ -66,7 +66,7 @@ public class Converter implements Runnable{
 
 	@Override
 	public void run() {
-		StringBuffer fileContents=readfile("TestData\\"+fileName+".html");
+		StringBuffer fileContents=readFile("TestData\\"+fileName+".html");
 //		System.out.println("HTML File:");
 //		System.out.println(fileContents);
 		StringBuffer markdownText=convert(fileContents);

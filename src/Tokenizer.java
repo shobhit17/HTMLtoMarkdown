@@ -56,10 +56,10 @@ public class Tokenizer {
 	private Token nextToken(StringBuffer htmlText) {
 		int indexAg=htmlText.indexOf("<");
 		int indexText = -1;
-		Pattern p = Pattern.compile("[^\n\t\r<]"); //Any character except Whitespaces and <  
-		Matcher m = p.matcher(htmlText);
-		if (m.find()) {
-			indexText = m.start();  				//indexText is index of first character except <
+		Pattern textRegex = Pattern.compile("[^\n\t\r<]"); //Any character except Whitespaces and <  
+		Matcher match = textRegex.matcher(htmlText);
+		if (match.find()) {
+			indexText = match.start();  				//indexText is index of first character except <
 		}
 		if(indexAg<indexText){                  // to find if next token will be a HTMLtag or text. True when HTMLTag
 			int i1=indexAg;
